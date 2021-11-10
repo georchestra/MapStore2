@@ -318,4 +318,62 @@ describe('catalog Epics', () => {
             }
         });
     });
+    it('addLayersFromCatalogsEpic wmts via object definion', (done) => {
+        const NUM_ACTIONS = 2;
+        testEpic(addTimeoutEpic(addLayersFromCatalogsEpic, 0), NUM_ACTIONS, addLayersMapViewerUrl(["topp:tasmania_cities_hidden"], [{"type": "wmts", "url": "base/web/client/test-resources/wmts/GetCapabilities-1.0.0.xml"}]), (actions) => {
+            expect(actions.length).toBe(NUM_ACTIONS);
+            actions.map((action) => {
+                switch (action.type) {
+                case ADD_LAYER:
+                    expect(action.layer.name).toBe("topp:tasmania_cities_hidden");
+                    expect(action.layer.title).toBe("tasmania_cities");
+                    expect(action.layer.type).toBe("wmts");
+                    expect(action.layer.url).toBe("http://sample.server/geoserver/gwc/service/wmts");
+                    break;
+                case TEST_TIMEOUT:
+                    break;
+                default:
+                    expect(true).toBe(false);
+                }
+            });
+            done();
+        }, {
+            catalog: {
+                delayAutoSearch: 50,
+                selectedService: "externalService",
+                services: {
+                    "externalService": {
+                        type: "wmts",
+                        url: "base/web/client/test-resources/wmts/GetCapabilities-1.0.0.xml"
+                    }
+                },
+                pageSize: 2
+            }
+        });
+    });
+    it('getSupportedFormatsEpic wms', (done) => {
+        const NUM_ACTIONS = 3;
+        const url = "base/web/client/test-resources/wms/GetCapabilities-1.1.1.xml";
+        testEpic(addTimeoutEpic(getSupportedFormatsEpic, 0), NUM_ACTIONS, formatOptionsFetch(url), (actions) => {
+            expect(actions.length).toBe(NUM_ACTIONS);
+            actions.map((action) => {
+                switch (action.type) {
+                case SET_FORMAT_OPTIONS:
+                    expect(action.formats).toBeTruthy();
+                    expect(action.formats.imageFormats).toEqual([{"label": "image/png", "value": "image/png"}, {"label": "image/gif", "value": "image/gif"}, {"label": "image/jpeg", "value": "image/jpeg"}, {"label": "image/png8", "value": "image/png8"}, {"label": "image/vnd.jpeg-png", "value": "image/vnd.jpeg-png"}]);
+                    expect(action.formats.infoFormats).toEqual(["text/plain", "text/html", "application/json"]);
+                    break;
+                case FORMAT_OPTIONS_LOADING:
+                    break;
+                case TEST_TIMEOUT:
+                    break;
+                default:
+                    expect(true).toBe(false);
+                }
+            });
+            done();
+        }, {
+            catalog: {}
+        });
+    });
 });
